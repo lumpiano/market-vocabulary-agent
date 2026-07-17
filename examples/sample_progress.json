@@ -1,0 +1,85 @@
+{
+  "schema_version": "0.2",
+  "terms": {
+    "Spot Price": {
+      "term": "Spot Price",
+      "first_seen": "2026-07-15",
+      "last_reviewed": "2026-07-16",
+      "review_count": 2,
+      "correct_count": 2,
+      "incorrect_count": 0,
+      "mastery_score": 100,
+      "next_review_date": "2026-07-30"
+    },
+    "Futures Contract": {
+      "term": "Futures Contract",
+      "first_seen": "2026-07-15",
+      "last_reviewed": "2026-07-17",
+      "review_count": 3,
+      "correct_count": 2,
+      "incorrect_count": 1,
+      "mastery_score": 67,
+      "next_review_date": "2026-07-24"
+    },
+    "Contango": {
+      "term": "Contango",
+      "first_seen": "2026-07-15",
+      "last_reviewed": "2026-07-17",
+      "review_count": 4,
+      "correct_count": 1,
+      "incorrect_count": 3,
+      "mastery_score": 25,
+      "next_review_date": "2026-07-18"
+    },
+    "Backwardation": {
+      "term": "Backwardation",
+      "first_seen": "2026-07-15",
+      "last_reviewed": "2026-07-15",
+      "review_count": 1,
+      "correct_count": 0,
+      "incorrect_count": 1,
+      "mastery_score": 0,
+      "next_review_date": "2026-07-16"
+    },
+    "Inventory Report": {
+      "term": "Inventory Report",
+      "first_seen": "2026-07-15",
+      "last_reviewed": "2026-07-16",
+      "review_count": 2,
+      "correct_count": 1,
+      "incorrect_count": 1,
+      "mastery_score": 50,
+      "next_review_date": "2026-07-19"
+    },
+    "Basis Point": {
+      "term": "Basis Point",
+      "first_seen": "2026-07-16",
+      "last_reviewed": "2026-07-17",
+      "review_count": 4,
+      "correct_count": 3,
+      "incorrect_count": 1,
+      "mastery_score": 75,
+      "next_review_date": "2026-07-24"
+    },
+    "Treasury Yield": {
+      "term": "Treasury Yield",
+      "first_seen": "2026-07-16",
+      "last_reviewed": "2026-07-16",
+      "review_count": 1,
+      "correct_count": 1,
+      "incorrect_count": 0,
+      "mastery_score": 100,
+      "next_review_date": "2026-07-30"
+    },
+    "Yield Curve": {
+      "term": "Yield Curve",
+      "first_seen": "2026-07-16",
+      "last_reviewed": "2026-07-17",
+      "review_count": 3,
+      "correct_count": 2,
+      "incorrect_count": 1,
+      "mastery_score": 67,
+      "next_review_date": "2026-07-24"
+    }
+  }
+}

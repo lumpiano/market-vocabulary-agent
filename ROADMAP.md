@@ -30,7 +30,29 @@ full documentation.
 
 ---
 
-## Version 0.2 — Robustness and Flexibility
+## Version 0.2 — Progress Tracking ✅ Completed
+
+**Released:** 2026-07-17
+
+This phase adds a local progress layer to the CLI, allowing the learner to record
+quiz results, track mastery for each vocabulary term, and see which terms are due
+for review.
+
+| Feature | Status |
+|---|---|
+| `TermRecord` and `ProgressStore` dataclasses with JSON persistence | ✅ Done |
+| `--record-quiz TERM --result correct\|incorrect` CLI command | ✅ Done |
+| `--progress` dashboard command (totals, mastered, due, weakest) | ✅ Done |
+| Mastery formula: `round(correct / total × 100)` clamped to `[0, 100]` | ✅ Done |
+| Four-band spaced-repetition scheduling (+1 / +3 / +7 / +14 days) | ✅ Done |
+| Auto-registration of lesson terms in progress store on every run | ✅ Done |
+| `examples/sample_progress.json` sanitised example file | ✅ Done |
+| 40-test pytest suite (`tests/test_progress.py`) | ✅ Done |
+| `data/progress/` git-ignored | ✅ Done |
+
+---
+
+## Version 0.3 — Robustness and Flexibility
 
 **Target:** Near-term
 
@@ -103,13 +125,13 @@ the default quiet behaviour.
 
 ---
 
-## Version 0.3 — Dashboard and Progress Tracking
+## Version 0.4 — Dashboard
 
 **Target:** Medium-term
 
 This phase introduces a local web dashboard built with Streamlit, turning the
 agent from a CLI tool into an interactive learning environment. The learner can
-browse past lessons, replay quizzes, and track progress without touching the
+browse past lessons, replay quizzes, and review progress without touching the
 terminal.
 
 ### Streamlit Dashboard
@@ -127,6 +149,8 @@ Key views:
 - **Calendar view** — one tile per day; green for lessons completed, grey for
   gaps
 - **Term of the day** — random review card drawn from the full vocabulary history
+- **Progress view** — mastery scores, weakest terms, and upcoming reviews pulled
+  from `data/progress/`
 
 ### Historical Lesson Browser
 
@@ -140,28 +164,10 @@ Full-text search across every term ever generated. Results show the term name,
 the lesson date it appeared in, and the theme. Useful for finding a definition
 heard on Bloomberg without remembering which day it was covered.
 
-### Progress Tracking
-
-A `data/progress.json` file records quiz results, review counts, and last-seen
-dates for every term. The dashboard surfaces this as a simple progress view — how
-many terms learned, how many quizzes attempted, current streak.
-
-```json
-{
-  "Basis Point": {
-    "first_seen": "2026-07-14",
-    "quiz_attempts": 3,
-    "quiz_correct": 2,
-    "last_reviewed": "2026-07-16"
-  }
-}
-```
-
 ### Quiz History
 
-Replay any past quiz from the lesson archive. Correct and incorrect answers are
-stored in `progress.json` so the system can identify weak areas. The dashboard
-shows a per-term accuracy table sorted by lowest score.
+Replay any past quiz from the lesson archive. The per-term accuracy data from
+`data/progress/` drives a sorted weak-area table and a visual mastery timeline.
 
 ---
 
@@ -250,6 +256,7 @@ are managed through the provider's secret store rather than a local `.env` file.
 | Version | Theme | Status |
 |---|---|---|
 | 0.1 | Foundation — core pipeline, validation, documentation | ✅ Released |
-| 0.2 | Robustness — retries, logging, flexible config, prompt templates | 🔲 Planned |
-| 0.3 | Dashboard — Streamlit UI, quiz history, progress tracking | 🔲 Planned |
+| 0.2 | Progress tracking — mastery formula, spaced repetition, quiz CLI | ✅ Released |
+| 0.3 | Robustness — retries, logging, flexible config, prompt templates | 🔲 Planned |
+| 0.4 | Dashboard — Streamlit UI, lesson browser, progress visualisation | 🔲 Planned |
 | 1.0 | Automation — daily scheduling, AI tutor, cloud deployment | 🔲 Planned |

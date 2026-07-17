@@ -1,6 +1,7 @@
 .env
 .venv/
 data/outputs/
+data/progress/
 __pycache__/
 *.pyc
 .vscode/

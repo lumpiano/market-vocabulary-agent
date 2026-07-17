@@ -64,6 +64,18 @@ language on Bloomberg and understanding why markets move.
   research during generation for fact-checked, source-cited lessons
 - **Weekday themes** — each day of the week has a fixed topic so the vocabulary
   builds systematically across the week
+- **Progress tracking** — records quiz results per term in a local JSON file;
+  tracks review count, correct/incorrect counts, mastery score, and next review
+  date
+- **Mastery formula** — `round(correct / total × 100)` clamped to `[0, 100]`;
+  returns `0` before any reviews have been recorded
+- **Spaced-repetition scheduling** — four bands drive the next-review interval:
+  needs work (0–33 → +1 day), learning (34–66 → +3 days), confident (67–84 →
+  +7 days), mastered (85–100 → +14 days)
+- **Quiz CLI** (`--record-quiz`/`--result`) — records one quiz attempt and prints
+  the updated mastery score and next review date
+- **Progress dashboard** (`--progress`) — prints totals, mastered term count,
+  terms due for review, and the five weakest terms
 
 ---
 
@@ -74,14 +86,24 @@ market_vocabulary_agent/
 ├── app/
 │   ├── __init__.py          # Package marker; required for python -m app.main
 │   ├── main.py              # Entry point — CLI, orchestration, all pipeline logic
-│   └── models.py            # Pydantic schema: MarketLesson, VocabularyTerm, QuizQuestion
+│   ├── models.py            # Pydantic schema: MarketLesson, VocabularyTerm, QuizQuestion
+│   └── progress.py          # Progress tracking: TermRecord, ProgressStore, mastery formula
 ├── data/
 │   ├── bloomberg_inbox/
 │   │   └── today.txt        # Write your Bloomberg notes here before each run
-│   └── outputs/             # Git-ignored; created at runtime
-│       └── YYYY-MM-DD/
-│           ├── lesson.json
-│           └── lesson.md
+│   ├── outputs/             # Git-ignored; created at runtime
+│   │   └── YYYY-MM-DD/
+│   │       ├── lesson.json
+│   │       └── lesson.md
+│   └── progress/            # Git-ignored; created at runtime
+│       └── progress.json    # Per-term quiz history and mastery scores
+├── examples/
+│   ├── sample_lesson.json   # Sanitised example lesson (JSON)
+│   ├── sample_lesson.md     # Sanitised example lesson (Markdown)
+│   └── sample_progress.json # Sanitised example progress file
+├── tests/
+│   ├── __init__.py
+│   └── test_progress.py     # 45 pytest tests for progress.py
 ├── .env                     # Git-ignored; holds your API key and settings
 ├── .gitignore
 ├── ARCHITECTURE.md          # Internal system documentation and pipeline diagrams
@@ -154,6 +176,7 @@ ENABLE_GOOGLE_SEARCH=false
 | `OUTPUT_DIR` | No | `data/outputs` | Root directory for saved lessons |
 | `BLOOMBERG_INBOX` | No | `data/bloomberg_inbox/today.txt` | Path to your daily Bloomberg notes file |
 | `ENABLE_GOOGLE_SEARCH` | No | `false` | Set to `true` to enable Google Search grounding by default |
+| `PROGRESS_DIR` | No | `data/progress` | Directory where `progress.json` is stored |
 
 The `.env` file is git-ignored and will never be committed to version control.
 
@@ -245,6 +268,59 @@ The `--search` flag is silently ignored in `--dry-run` mode.
 
 ---
 
+### Record a Quiz Result
+
+After reading a lesson, record whether you answered the term's quiz question
+correctly or incorrectly. The agent updates the mastery score and schedules the
+next review.
+
+```bash
+python -m app.main --record-quiz "Basis Point" --result correct
+python -m app.main --record-quiz "Contango" --result incorrect
+```
+
+Expected output:
+
+```
+Recorded: Basis Point — correct
+  Mastery: 100  |  Next review: 2026-07-31
+```
+
+`--result` accepts only `correct` or `incorrect`. Omitting it prints an error
+and exits with code `1`.
+
+---
+
+### View Progress Dashboard
+
+Prints a summary of your learning state: total terms seen, mastered terms, terms
+due for review today, and your five weakest terms by mastery score.
+
+```bash
+python -m app.main --progress
+```
+
+Expected output:
+
+```
+=== Progress ===
+Total terms seen : 8
+Mastered (≥85)  : 2
+Due for review  : 3
+
+Weakest terms:
+  Backwardation         mastery=0   (1 review)
+  Contango              mastery=25  (4 reviews)
+  Inventory Report      mastery=50  (2 reviews)
+  Futures Contract      mastery=67  (3 reviews)
+  Yield Curve           mastery=67  (3 reviews)
+```
+
+A term appears as "due for review" when its `next_review_date` is today or earlier.
+Terms that have never been quizzed are excluded from the weakest terms list.
+
+---
+
 ## Output Files
 
 Each successful run writes two files to a date-stamped subfolder:
@@ -262,6 +338,38 @@ control.
 
 A representative example of the output format is available at
 `examples/sample_lesson.md` and `examples/sample_lesson.json`.
+
+---
+
+## Progress Data
+
+Quiz results and mastery scores are stored locally in
+`data/progress/progress.json`. The file is created automatically on the first
+lesson run or quiz recording. The directory is git-ignored.
+
+### `TermRecord` fields
+
+| Field | Type | Description |
+|---|---|---|
+| `term` | `str` | Vocabulary term name |
+| `first_seen` | `str` | ISO date when the term first appeared in a lesson |
+| `last_reviewed` | `str` | ISO date of the most recent quiz attempt |
+| `review_count` | `int` | Total quiz attempts |
+| `correct_count` | `int` | Correct attempts |
+| `incorrect_count` | `int` | Incorrect attempts |
+| `mastery_score` | `int` | `round(correct / total × 100)`, clamped to `[0, 100]` |
+| `next_review_date` | `str` | ISO date of the next scheduled review |
+
+### Spaced-repetition schedule
+
+| Mastery band | Interval |
+|---|---|
+| 0–33 (needs work) | +1 day |
+| 34–66 (learning) | +3 days |
+| 67–84 (confident) | +7 days |
+| 85–100 (mastered) | +14 days |
+
+A representative example is available at `examples/sample_progress.json`.
 
 ---
 
@@ -351,9 +459,7 @@ was consulted.
 
 ## Current Status
 
-**Version 0.1** — initial working release.
-
-The core pipeline is complete and validated end-to-end:
+**Version 0.2** — progress tracking release.
 
 | Component | Status |
 |---|---|
@@ -366,12 +472,17 @@ The core pipeline is complete and validated end-to-end:
 | Date-stamped output folders | Complete |
 | Dry-run mode | Complete |
 | Google Search grounding (optional) | Complete |
+| Progress tracking (`app/progress.py`) | Complete |
+| Mastery formula and spaced-repetition scheduling | Complete |
+| `--record-quiz` / `--result` CLI commands | Complete |
+| `--progress` dashboard command | Complete |
+| 40-test pytest suite | Complete |
 
 ---
 
 ## Roadmap
 
-### Version 0.2 — Robustness and Flexibility
+### Version 0.3 — Robustness and Flexibility
 
 - Dated inbox files (`YYYY-MM-DD.txt`) alongside `today.txt`
 - Prompt templates extracted to a `prompts/` directory
@@ -379,20 +490,19 @@ The core pipeline is complete and validated end-to-end:
 - Structured config file (`config.toml`) for advanced settings
 - Python `logging` module replacing bare `print()` calls
 
-### Version 0.3 — Dashboard and Progress Tracking
+### Version 0.4 — Dashboard
 
 - Local Streamlit dashboard for reading and navigating lessons
 - Historical lesson browser by date and theme
 - Full-text vocabulary search across all past lessons
-- Quiz history and per-term accuracy tracking in `data/progress.json`
-- Daily learning streak and progress summary
+- Progress visualisation powered by `data/progress/`
+- Daily learning streak display
 
 ### Version 1.0 — Automation and Intelligence
 
 - Daily automation via cron (Linux/macOS) or Task Scheduler (Windows)
 - Weekly summary mode (`--weekly`) generating a consolidated review lesson
 - Learning analytics: quiz accuracy, retention curves, themed progress charts
-- Vocabulary mastery levels with spaced-repetition scheduling
 - AI tutor mode (`--tutor`) for conversational follow-up on lesson content
 - Optional cloud deployment for device-agnostic access
 

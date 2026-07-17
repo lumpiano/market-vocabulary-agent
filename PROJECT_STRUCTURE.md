@@ -13,14 +13,24 @@ market_vocabulary_agent/
 ├── app/
 │   ├── __init__.py
 │   ├── main.py
-│   └── models.py
+│   ├── models.py
+│   └── progress.py
 ├── data/
 │   ├── bloomberg_inbox/
 │   │   └── today.txt
-│   └── outputs/               ← git-ignored; created at runtime
-│       └── YYYY-MM-DD/
-│           ├── lesson.json
-│           └── lesson.md
+│   ├── outputs/               ← git-ignored; created at runtime
+│   │   └── YYYY-MM-DD/
+│   │       ├── lesson.json
+│   │       └── lesson.md
+│   └── progress/              ← git-ignored; created at runtime
+│       └── progress.json
+├── examples/
+│   ├── sample_lesson.json
+│   ├── sample_lesson.md
+│   └── sample_progress.json
+├── tests/
+│   ├── __init__.py
+│   └── test_progress.py
 ├── .env                       ← git-ignored; holds secrets
 ├── .gitignore
 ├── LICENSE
@@ -41,8 +51,9 @@ runs lives here.
 | File | Purpose |
 |---|---|
 | `__init__.py` | Marks `app` as a Python package. Empty; required for `python -m app.main` to resolve correctly. |
-| `main.py` | Entry point and orchestration layer. Parses CLI arguments, loads settings from `.env`, reads the Bloomberg inbox, calls either the dry-run path or the Gemini API, validates the result, and writes the output files. |
+| `main.py` | Entry point and orchestration layer. Parses CLI arguments, loads settings from `.env`, reads the Bloomberg inbox, calls either the dry-run path or the Gemini API, validates the result, writes the output files, and delegates to `progress.py` for quiz and progress commands. |
 | `models.py` | Pydantic schema definitions. Declares `VocabularyTerm`, `QuizQuestion`, and `MarketLesson`. All generated content is validated against these models before anything is written to disk. |
+| `progress.py` | Progress tracking module. Defines `TermRecord` and `ProgressStore` dataclasses, the mastery formula (`compute_mastery`), and the spaced-repetition scheduler (`compute_next_review`). Persists data to `data/progress/progress.json`. |
 
 ---
 
@@ -76,6 +87,41 @@ data/outputs/
 
 Running the agent again on the same date overwrites the existing files for that date.
 
+#### `data/progress/`
+
+Quiz and mastery data. **This folder is git-ignored** and created automatically
+when a lesson is generated or a quiz result is recorded. Do not commit its
+contents — progress data is personal and specific to each learner's session.
+
+```
+data/progress/
+└── progress.json   # TermRecord entries keyed by term name; schema_version 0.2
+```
+
+---
+
+### `examples/`
+
+Sanitised example files committed to the repository for documentation and
+reference. These are static snapshots — they are not read by the agent at runtime.
+
+| File | Purpose |
+|---|---|
+| `sample_lesson.json` | Example `MarketLesson` JSON output matching the Pydantic schema |
+| `sample_lesson.md` | Same lesson rendered as Markdown |
+| `sample_progress.json` | Example `ProgressStore` JSON with eight terms at varying mastery levels (0–100) |
+
+---
+
+### `tests/`
+
+Automated test suite. Run with `python -m pytest tests/ -v`.
+
+| File | Purpose |
+|---|---|
+| `__init__.py` | Marks `tests` as a Python package. Empty. |
+| `test_progress.py` | 40 pytest tests covering `compute_mastery`, `compute_next_review`, `TermRecord` state transitions, and `ProgressStore` operations (term management, load/save, missing and corrupted files). |
+
 ---
 
 ### `.env`
@@ -104,6 +150,7 @@ Tells Git which files and folders to ignore. The following are excluded:
 | `.env` | Contains the API key — must never be committed |
 | `.venv/` | Virtual environment; reproducible from `requirements.txt` |
 | `data/outputs/` | Generated files; not part of source control |
+| `data/progress/` | Personal quiz and mastery data; not part of source control |
 | `__pycache__/` | Python bytecode cache; auto-generated |
 | `*.pyc` | Compiled Python files; auto-generated |
 | `.vscode/` | VS Code editor settings; developer-specific |

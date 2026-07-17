@@ -4,7 +4,7 @@ import argparse
 import json
 import os
 import sys
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -14,6 +14,7 @@ from google.genai import types
 from pydantic import ValidationError
 
 from app.models import MarketLesson
+from app.progress import ProgressStore
 
 
 THEMES = {
@@ -97,6 +98,24 @@ def parse_arguments() -> argparse.Namespace:
         help="Allow Gemini to use Google Search grounding for current research.",
     )
 
+    parser.add_argument(
+        "--record-quiz",
+        metavar="TERM",
+        help="Record a quiz result for a vocabulary term (use with --result).",
+    )
+
+    parser.add_argument(
+        "--result",
+        choices=["correct", "incorrect"],
+        help="Outcome of the quiz attempt (required with --record-quiz).",
+    )
+
+    parser.add_argument(
+        "--progress",
+        action="store_true",
+        help="Show the progress dashboard.",
+    )
+
     return parser.parse_args()
 
 
@@ -121,6 +140,7 @@ def load_settings(project_root: Path) -> dict[str, str]:
             "ENABLE_GOOGLE_SEARCH",
             "false",
         ).strip().lower(),
+        "progress_dir": os.getenv("PROGRESS_DIR", "data/progress").strip(),
     }
 
 
@@ -643,10 +663,89 @@ def save_lesson(
     return markdown_path, json_path
 
 
+def get_progress_path(project_root: Path, configured_progress_dir: str) -> Path:
+    return resolve_path(project_root, configured_progress_dir) / "progress.json"
+
+
+def cmd_record_quiz(
+    term: str,
+    correct: bool,
+    progress_path: Path,
+    today: str,
+) -> int:
+    store = ProgressStore.load(progress_path)
+    record = store.record_quiz_result(term=term, correct=correct, today=today)
+    store.save(progress_path)
+
+    result_label = "correct" if correct else "incorrect"
+    days_until = (date.fromisoformat(record.next_review_date) - date.fromisoformat(today)).days
+    print(f"Recorded: {term} — {result_label}")
+    print(f"  Mastery score : {record.mastery_score}")
+    print(f"  Next review   : {record.next_review_date} ({days_until} days)")
+    print(f"  Total reviews : {record.review_count}")
+    return 0
+
+
+def cmd_show_progress(
+    progress_path: Path,
+    today: str,
+) -> int:
+    store = ProgressStore.load(progress_path)
+    total = store.total_terms()
+    mastered = store.mastered_terms()
+    due = store.due_for_review(today)
+    weakest = store.weakest_terms(n=5)
+
+    print("=== Progress Dashboard ===")
+    print(f"Total terms learned : {total}")
+    print(f"Mastered  (>=85%)   : {len(mastered)}")
+    print(f"Due for review today: {len(due)}")
+
+    if weakest:
+        print()
+        print("Weakest terms:")
+        for i, r in enumerate(weakest, 1):
+            print(
+                f"  {i}. {r.term:<30} "
+                f"mastery {r.mastery_score:>3}%  "
+                f"({r.review_count} reviews, {r.correct_count} correct)"
+            )
+    else:
+        print()
+        print(
+            "No terms reviewed yet. "
+            "Run a lesson and record results with --record-quiz."
+        )
+
+    return 0
+
+
 def main() -> int:
     args = parse_arguments()
     project_root = get_project_root()
     settings = load_settings(project_root)
+
+    progress_path = get_progress_path(project_root, settings["progress_dir"])
+
+    if args.progress:
+        today = get_current_datetime(settings["timezone"]).date().isoformat()
+        return cmd_show_progress(progress_path=progress_path, today=today)
+
+    if args.record_quiz:
+        if not args.result:
+            print(
+                "Error: --result {correct,incorrect} is required "
+                "when using --record-quiz.",
+                file=sys.stderr,
+            )
+            return 1
+        today = get_current_datetime(settings["timezone"]).date().isoformat()
+        return cmd_record_quiz(
+            term=args.record_quiz,
+            correct=(args.result == "correct"),
+            progress_path=progress_path,
+            today=today,
+        )
 
     try:
         current_datetime = get_current_datetime(settings["timezone"])
@@ -695,6 +794,12 @@ def main() -> int:
             project_root=project_root,
             configured_output_dir=settings["output_dir"],
         )
+
+        # Register each term in the progress store (first_seen only; no review count).
+        store = ProgressStore.load(progress_path)
+        for vocabulary_term in lesson.terms:
+            store.ensure_term(vocabulary_term.term, lesson_date)
+        store.save(progress_path)
 
         print("Vocabulary lesson created successfully.")
         print(f"Open: {markdown_path}")

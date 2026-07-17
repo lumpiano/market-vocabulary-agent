@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.2.0] - 2026-07-17
+
+### Added
+
+- **Progress tracking module** (`app/progress.py`) — new `TermRecord` and
+  `ProgressStore` dataclasses that persist per-term quiz history to a local JSON
+  file under `data/progress/`
+- **`--record-quiz TERM --result correct|incorrect`** — CLI command that records
+  one quiz attempt for a named term and displays the updated mastery score and
+  next scheduled review date
+- **`--progress`** — CLI command that prints a four-item dashboard: total terms
+  seen, terms mastered (mastery ≥ 85), terms due for review today, and the five
+  weakest terms with their mastery scores
+- **Mastery formula** — `round(correct / total × 100)` clamped to `[0, 100]`;
+  returns `0` when no reviews have been recorded
+- **Spaced-repetition scheduling** — four bands drive the next-review interval:
+  `0–33 → +1 day`, `34–66 → +3 days`, `67–84 → +7 days`, `85–100 → +14 days`
+- **Auto-registration** — every lesson generation run silently registers its five
+  vocabulary terms in the progress store so they appear in `--progress` output
+  without requiring a manual quiz result first
+- **`examples/sample_progress.json`** — sanitised example progress file with
+  eight terms at varying mastery levels (0–100), illustrating the `schema_version
+  0.2` JSON format
+- **Test suite** (`tests/test_progress.py`) — 40 pytest tests covering mastery
+  formula bounds, next-review band boundaries, `TermRecord` state transitions,
+  `ProgressStore` term operations, and load/save roundtrips including missing and
+  corrupted files
+- **`data/progress/`** added to `.gitignore` — progress data is personal runtime
+  state and is not committed to version control
+
+---
+
 ## [0.1.0] - 2026-07-16
 
 ### Added
