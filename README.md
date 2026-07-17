@@ -64,8 +64,9 @@ language on Bloomberg and understanding why markets move.
   research during generation for fact-checked, source-cited lessons
 - **Weekday themes** — each day of the week has a fixed topic so the vocabulary
   builds systematically across the week
-- **Streamlit dashboard** (`app/dashboard.py`) — browser-based interface with two
-  pages: Market Notes and Progress; launch with `streamlit run app/dashboard.py`
+- **Streamlit dashboard** (`app/dashboard.py`) — browser-based interface with
+  three pages: Market Notes, Progress, and Knowledge Graph; launch with
+  `streamlit run app/dashboard.py`
 - **Manual Market Notes page** — enter and save Bloomberg observations to
   `today.txt`, preview parsed notes, and launch dry-run or live lesson generation
   without opening a terminal
@@ -84,6 +85,22 @@ language on Bloomberg and understanding why markets move.
   the updated mastery score and next review date
 - **Progress dashboard** (`--progress`) — prints totals, mastered term count,
   terms due for review, and the five weakest terms
+- **Knowledge graph** (`app/knowledge_graph.py`) — automatically builds a graph
+  of vocabulary terms and semantic relationships; every lesson adds nodes and
+  edges; persisted to `data/knowledge_graph/knowledge_graph.json`
+- **Two-layer connections** — deterministic same-lesson `related_to` edges
+  (confidence 0.50) plus AI-assisted typed semantic edges (confidence ≥ 0.70)
+  across nine relationship types (`causes`, `affects`, `measured_by`,
+  `opposite_of`, `part_of`, `example_of`, `used_in`, `influenced_by`,
+  `related_to`)
+- **Term normalisation** — `normalize_term()` resolves 20+ financial aliases
+  (CPI, GDP, Fed, FOMC, P/E, EPS, VIX, and more) so the graph stays clean
+  across abbreviation variants
+- **Graph CLI commands** — `--graph-term TERM` (node details + top connections +
+  study recommendation), `--graph-stats` (totals, most-connected, isolated,
+  strongest), `--rebuild-graph` (replay all lesson files)
+- **Knowledge Graph dashboard page** — term explorer with mastery, connections,
+  definition, Graphviz DOT chart, and "study next" recommendation
 
 ---
 
@@ -93,7 +110,8 @@ language on Bloomberg and understanding why markets move.
 market_vocabulary_agent/
 ├── app/
 │   ├── __init__.py          # Package marker; required for python -m app.main
-│   ├── dashboard.py         # Streamlit dashboard: Market Notes + Progress pages
+│   ├── dashboard.py         # Streamlit dashboard: Market Notes, Progress, Knowledge Graph
+│   ├── knowledge_graph.py   # Knowledge graph: TermNode, RelationshipEdge, KnowledgeGraph
 │   ├── main.py              # Entry point — CLI, orchestration, all pipeline logic
 │   ├── models.py            # Pydantic schema: MarketLesson, VocabularyTerm, QuizQuestion
 │   ├── notes.py             # Notes module: load, save, parse, validate today.txt
@@ -101,6 +119,8 @@ market_vocabulary_agent/
 ├── data/
 │   ├── bloomberg_inbox/
 │   │   └── today.txt        # Write your Bloomberg notes here before each run
+│   ├── knowledge_graph/     # Git-ignored; created at runtime
+│   │   └── knowledge_graph.json  # Term nodes and relationship edges
 │   ├── outputs/             # Git-ignored; created at runtime
 │   │   └── YYYY-MM-DD/
 │   │       ├── lesson.json
@@ -108,11 +128,13 @@ market_vocabulary_agent/
 │   └── progress/            # Git-ignored; created at runtime
 │       └── progress.json    # Per-term quiz history and mastery scores
 ├── examples/
+│   ├── sample_knowledge_graph.json  # Sanitised example knowledge graph (8 nodes, 20 edges)
 │   ├── sample_lesson.json   # Sanitised example lesson (JSON)
 │   ├── sample_lesson.md     # Sanitised example lesson (Markdown)
 │   └── sample_progress.json # Sanitised example progress file
 ├── tests/
 │   ├── __init__.py
+│   ├── test_knowledge_graph.py  # 30 pytest tests for knowledge_graph.py
 │   ├── test_notes.py        # 25 pytest tests for notes.py
 │   └── test_progress.py     # 40 pytest tests for progress.py
 ├── .env                     # Git-ignored; holds your API key and settings
@@ -189,6 +211,7 @@ ENABLE_GOOGLE_SEARCH=false
 | `BLOOMBERG_INBOX` | No | `data/bloomberg_inbox/today.txt` | Path to your daily Bloomberg notes file |
 | `ENABLE_GOOGLE_SEARCH` | No | `false` | Set to `true` to enable Google Search grounding by default |
 | `PROGRESS_DIR` | No | `data/progress` | Directory where `progress.json` is stored |
+| `GRAPH_DIR` | No | `data/knowledge_graph` | Directory where `knowledge_graph.json` is stored |
 
 The `.env` file is git-ignored and will never be committed to version control.
 
@@ -289,7 +312,8 @@ Market Notes page with dry-run generation.
 streamlit run app/dashboard.py
 ```
 
-The dashboard opens in your browser at `http://localhost:8501` and has two pages:
+The dashboard opens in your browser at `http://localhost:8501` and has three
+pages:
 
 **Market Notes**
 
@@ -305,6 +329,14 @@ The dashboard opens in your browser at `http://localhost:8501` and has two pages
 - View total terms seen, mastered terms (≥ 85%), and terms due for review today
 - Weakest terms are listed with mastery bars
 - Record a quiz result for any term directly from the browser
+
+**Knowledge Graph**
+
+- Browse all vocabulary terms and their semantic connections
+- Per-term view: mastery score, lesson count, definition, category, related terms
+- Graphviz DOT chart centred on the selected term (up to 15 edges displayed)
+- "Study next" recommendation: lowest-mastery connected term
+- Graph statistics: most-connected terms, strongest relationships, category counts
 
 ---
 
@@ -358,6 +390,53 @@ Weakest terms:
 
 A term appears as "due for review" when its `next_review_date` is today or earlier.
 Terms that have never been quizzed are excluded from the weakest terms list.
+
+---
+
+### Explore the Knowledge Graph
+
+Inspect a term's connections, confidence scores, and a study recommendation.
+
+```bash
+python -m app.main --graph-term "Yield Curve"
+```
+
+Expected output:
+
+```
+=== Knowledge Graph: Yield Curve ===
+Definition : A graph that plots interest rates of bonds with equal credit quality...
+Category   : Fixed Income
+First seen : 2026-07-15  |  Last seen: 2026-07-17
+Lessons    : 2  |  Connections: 4
+
+Top connections:
+  Treasury Yield        related_to      50%  2 lesson(s)
+  Federal Funds Rate    affects         85%  2 lesson(s)
+  Basis Point           related_to      50%  2 lesson(s)
+  Consumer Price Index  influenced_by   72%  1 lesson(s)
+
+Study next: Basis Point (mastery 0%)
+```
+
+---
+
+### View Graph Statistics
+
+```bash
+python -m app.main --graph-stats
+```
+
+---
+
+### Rebuild the Graph from History
+
+Replays all saved lesson files to reconstruct the graph from scratch. Use after
+importing lessons from another machine or after manual edits to output files.
+
+```bash
+python -m app.main --rebuild-graph
+```
 
 ---
 
@@ -499,7 +578,7 @@ was consulted.
 
 ## Current Status
 
-**Version 0.3** — dashboard release.
+**Version 0.4** — knowledge graph release.
 
 | Component | Status |
 |---|---|
@@ -519,13 +598,17 @@ was consulted.
 | Manual Market Notes page with Bloomberg disclaimer | Complete |
 | Progress page with metrics, weakest terms, and quiz recording | Complete |
 | Notes module (`app/notes.py`) with validation | Complete |
-| 65-test pytest suite (25 notes + 40 progress) | Complete |
+| Knowledge graph (`app/knowledge_graph.py`) | Complete |
+| Two-layer connections (same-lesson + AI-assisted semantic edges) | Complete |
+| `--graph-term` / `--graph-stats` / `--rebuild-graph` CLI commands | Complete |
+| Knowledge Graph dashboard page with Graphviz chart | Complete |
+| 95-test pytest suite (30 graph + 25 notes + 40 progress) | Complete |
 
 ---
 
 ## Roadmap
 
-### Version 0.4 — Robustness and Flexibility
+### Version 0.5 — Robustness and Flexibility
 
 - Dated inbox files (`YYYY-MM-DD.txt`) alongside `today.txt`
 - Prompt templates extracted to a `prompts/` directory

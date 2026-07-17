@@ -102,7 +102,37 @@ content reproduction, no profit promises, no personalised trading instructions.
 
 ---
 
-## Version 0.4 — Robustness and Flexibility
+## Version 0.4 — Knowledge Graph ✅ Completed
+
+**Released:** 2026-07-17
+
+This phase adds an automatic vocabulary connection layer. Every lesson
+populates a local graph of terms and relationships, enabling the learner to
+see how financial concepts connect, identify isolated weak spots, and follow
+a guided study path from any term.
+
+| Feature | Status |
+|---|---|
+| `app/knowledge_graph.py` — `TermNode`, `RelationshipEdge`, `KnowledgeGraph` dataclasses | ✅ Done |
+| `normalize_term()` with 20+ financial alias resolutions | ✅ Done |
+| Deterministic same-lesson edges (`related_to` at confidence 0.50) | ✅ Done |
+| AI-assisted semantic edges (9 typed relationships, confidence ≥ 0.70) | ✅ Done |
+| Symmetric edge deduplication for `related_to` and `opposite_of` | ✅ Done |
+| Confidence boost +0.05 per repeat lesson co-occurrence, capped at 1.0 | ✅ Done |
+| `--graph-term TERM` CLI command | ✅ Done |
+| `--graph-stats` CLI command | ✅ Done |
+| `--rebuild-graph` CLI command | ✅ Done |
+| Knowledge Graph page in the Streamlit dashboard | ✅ Done |
+| Graphviz DOT chart with focus-term highlighting | ✅ Done |
+| "Study next" recommendation (lowest-mastery connected term) | ✅ Done |
+| `examples/sample_knowledge_graph.json` sanitised example | ✅ Done |
+| 30-test pytest suite (`tests/test_knowledge_graph.py`) | ✅ Done |
+| `data/knowledge_graph/` git-ignored | ✅ Done |
+| `GRAPH_DIR` environment variable | ✅ Done |
+
+---
+
+## Version 0.5 — Robustness and Flexibility
 
 **Target:** Near-term
 
@@ -238,5 +268,6 @@ are managed through the provider's secret store rather than a local `.env` file.
 | 0.1 | Foundation — core pipeline, validation, documentation | ✅ Released |
 | 0.2 | Progress tracking — mastery formula, spaced repetition, quiz CLI | ✅ Released |
 | 0.3 | Dashboard — manual notes UI, Bloomberg disclaimer, progress view | ✅ Released |
-| 0.4 | Robustness — retries, logging, flexible config, prompt templates | 🔲 Planned |
+| 0.4 | Knowledge Graph — term connections, graph CLI, dashboard page | ✅ Released |
+| 0.5 | Robustness — retries, logging, flexible config, prompt templates | 🔲 Planned |
 | 1.0 | Automation — daily scheduling, AI tutor, cloud deployment | 🔲 Planned |

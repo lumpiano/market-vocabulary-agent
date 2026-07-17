@@ -12,6 +12,7 @@ from zoneinfo import ZoneInfo
 import streamlit as st
 from dotenv import load_dotenv
 
+from app.knowledge_graph import KnowledgeGraph
 from app.notes import load_notes, parse_notes, save_notes, validate_notes
 from app.progress import ProgressStore
 
@@ -29,6 +30,7 @@ def _resolve(raw: str) -> Path:
 _INBOX_PATH = _resolve(os.getenv("BLOOMBERG_INBOX", "data/bloomberg_inbox/today.txt"))
 _OUTPUT_DIR = _resolve(os.getenv("OUTPUT_DIR", "data/outputs"))
 _PROGRESS_PATH = _resolve(os.getenv("PROGRESS_DIR", "data/progress")) / "progress.json"
+_GRAPH_PATH = _resolve(os.getenv("GRAPH_DIR", "data/knowledge_graph")) / "knowledge_graph.json"
 _TIMEZONE = os.getenv("TIMEZONE", "America/New_York")
 
 _BLOOMBERG_NOTICE = (
@@ -226,6 +228,118 @@ def page_progress() -> None:
         st.info("No terms in the progress store yet. Generate a lesson first.")
 
 
+# ── page: Knowledge Graph ─────────────────────────────────────────────────────
+
+
+def page_knowledge_graph() -> None:
+    st.header("Knowledge Graph")
+
+    graph = KnowledgeGraph.load(_GRAPH_PATH)
+
+    if not graph.nodes:
+        st.info(
+            "No knowledge graph data yet. "
+            "Generate a lesson to start building vocabulary connections."
+        )
+        return
+
+    s = graph.stats()
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Terms", s["total_nodes"])
+    col2.metric("Connections", s["total_edges"])
+    col3.metric("Categories", len(s["categories"]))
+
+    st.divider()
+
+    term_options = sorted(node.term for node in graph.nodes.values())
+    selected = st.selectbox("Select a term to explore", term_options)
+
+    if selected:
+        from app.knowledge_graph import normalize_term
+        nkey = normalize_term(selected)
+        node = graph.nodes.get(nkey)
+
+        if node:
+            c1, c2, c3 = st.columns(3)
+            connections = graph.connections_for_term(selected)
+            c1.metric("Mastery", f"{node.mastery_score}%")
+            c2.metric("Lessons seen", node.lesson_count)
+            c3.metric("Connections", len(connections))
+
+            st.markdown(f"**Definition:** {node.definition}")
+            st.markdown(f"**Category:** {node.category}")
+            st.caption(
+                f"First seen: {node.first_seen}  |  Last seen: {node.last_seen}"
+            )
+
+            st.divider()
+            st.subheader("Connections")
+
+            strong = graph.strongest_connections(selected, n=10)
+            if strong:
+                for edge in strong:
+                    other_key = (
+                        edge.target_term
+                        if edge.source_term == nkey
+                        else edge.source_term
+                    )
+                    other_node = graph.nodes.get(other_key)
+                    other_display = other_node.term if other_node else other_key
+                    confidence_pct = round(edge.confidence_score * 100)
+                    st.markdown(
+                        f"**{other_display}** — {edge.relationship_type} · "
+                        f"{confidence_pct}% · {edge.lesson_count} lesson(s)"
+                    )
+                    st.caption(edge.explanation)
+            else:
+                st.caption("No connections found for this term.")
+
+            st.divider()
+            st.subheader("Graph view")
+            try:
+                st.graphviz_chart(
+                    graph.to_dot(focus_term=selected, max_edges=15),
+                    use_container_width=True,
+                )
+            except Exception:
+                st.caption("Install graphviz for graph visualization.")
+
+            st.divider()
+            st.subheader("Study next")
+            recommendation = graph.recommend_next_term(selected)
+            if recommendation:
+                rec_node = graph.nodes.get(recommendation)
+                rec_display = rec_node.term if rec_node else recommendation
+                st.info(
+                    f"Recommended next term to study: **{rec_display}** "
+                    f"(lowest mastery among connections)"
+                )
+            else:
+                st.caption("No study recommendation available for this term.")
+
+    with st.expander("Graph statistics"):
+        if s["most_connected_terms"]:
+            st.markdown("**Most connected terms:**")
+            for term_key, degree in s["most_connected_terms"]:
+                n = graph.nodes.get(term_key)
+                display = n.term if n else term_key
+                st.markdown(f"- {display}: {degree} connections")
+
+        if s["strongest_relationships"]:
+            st.markdown("**Strongest relationships:**")
+            for edge in s["strongest_relationships"]:
+                confidence_pct = round(edge.confidence_score * 100)
+                st.markdown(
+                    f"- {edge.source_term} → {edge.target_term} "
+                    f"[{edge.relationship_type}] {confidence_pct}%"
+                )
+
+        if s["categories"]:
+            st.markdown("**Categories:**")
+            for category, count in sorted(s["categories"].items()):
+                st.markdown(f"- {category}: {count} term(s)")
+
+
 # ── entry point ───────────────────────────────────────────────────────────────
 
 
@@ -239,14 +353,16 @@ def main() -> None:
 
     page = st.sidebar.radio(
         "Navigate",
-        ["Market Notes", "Progress"],
+        ["Market Notes", "Progress", "Knowledge Graph"],
         index=0,
     )
 
     if page == "Market Notes":
         page_market_notes()
-    else:
+    elif page == "Progress":
         page_progress()
+    else:
+        page_knowledge_graph()
 
 
 main()

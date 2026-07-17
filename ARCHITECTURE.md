@@ -13,8 +13,11 @@ reads one plain-text inbox file, constructs a structured prompt, sends it to the
 Gemini API with a JSON schema constraint, validates the response against a Pydantic
 model, and writes the lesson to disk in both Markdown and JSON formats.
 
-There is no server, no database, and no persistent state between runs. The only
-side effects are the two files written to `data/outputs/YYYY-MM-DD/`.
+There is no server, no database, and no persistent state between runs beyond
+the local JSON files. On each run the pipeline writes two lesson files to
+`data/outputs/YYYY-MM-DD/`, updates the progress store in
+`data/progress/progress.json`, and updates the knowledge graph in
+`data/knowledge_graph/knowledge_graph.json`.
 
 ---
 
@@ -69,10 +72,19 @@ Validated MarketLesson
                 │
                 ▼
             lesson.md
+
                 │
-                │  (future)
                 ▼
-          Dashboard / Analytics
+      KnowledgeGraph.update_from_lesson()
+      (same-lesson edges, confidence 0.50)
+                │
+                │  [live run only]
+                ▼
+      build_ai_connections()
+      (Gemini call → typed semantic edges, confidence ≥ 0.70)
+                │
+                ▼
+      knowledge_graph.json
 ```
 
 ---
@@ -114,6 +126,7 @@ that is threaded through the rest of the pipeline.
 | `output_dir` | `OUTPUT_DIR` | `data/outputs` |
 | `bloomberg_inbox` | `BLOOMBERG_INBOX` | `data/bloomberg_inbox/today.txt` |
 | `enable_google_search` | `ENABLE_GOOGLE_SEARCH` | `false` |
+| `graph_dir` | `GRAPH_DIR` | `data/knowledge_graph` |
 
 ---
 
@@ -223,6 +236,48 @@ files are created or modified on failure.
 
 ---
 
+### Knowledge Graph — `app/knowledge_graph.py`
+
+A pure data module with no Gemini imports. It maintains two collections:
+
+- **Nodes** (`dict[str, TermNode]`) — keyed by `normalize_term(term)`; one entry
+  per unique vocabulary term across all lessons
+- **Edges** (`dict[str, RelationshipEdge]`) — keyed by a deterministic edge key;
+  one entry per unique (source, relationship_type, target) triple
+
+**Node lifecycle (`ensure_node`):** On first encounter a `TermNode` is created.
+On repeat lessons: `last_seen` and `lesson_count` are updated; `definition` is
+replaced only if the new one is longer.
+
+**Edge lifecycle (`ensure_edge`):** On first encounter a `RelationshipEdge` is
+created. On repeat: `confidence_score` is boosted by +0.05 (capped at 1.0),
+`lesson_count` is incremented, and `explanation` is replaced only if the new one
+is longer.
+
+**Symmetric deduplication:** `related_to` and `opposite_of` use a sorted edge
+key so `(A→B)` and `(B→A)` map to the same entry. Directed types preserve order.
+
+**`normalize_term(term)`:** Lowercase → collapse whitespace → strip punctuation
+(except `-` and `'`) → resolve `KNOWN_ALIASES` (e.g. `"cpi"` →
+`"consumer price index"`). Called on every term before any map lookup or edge
+key construction.
+
+**`update_from_lesson(lesson, lesson_date)`:** Adds five nodes and C(5,2) = 10
+`related_to` edges (one for every pair of co-occurring terms in the lesson).
+
+**`build_ai_connections()` (in `main.py`):** Secondary Gemini call after lesson
+generation on live runs. Returns a list of edge dicts. Each entry is validated:
+both terms must be from the lesson, `relationship_type` must be in
+`RELATIONSHIP_TYPES`, `confidence_score` must be ≥ 0.70, and `explanation` must
+be non-empty. Returns `[]` on any error — a failed AI-connections call never
+aborts the lesson.
+
+**`recommend_next_term(term)`:** Among all terms connected to the given term,
+returns the normalized key of the one with the lowest `mastery_score`. Ties are
+broken by highest edge confidence. Returns `None` if the term is isolated.
+
+---
+
 ### Markdown Generation — `lesson_to_markdown()`
 
 **File:** `app/main.py`
@@ -319,11 +374,14 @@ is called identically to the dry-run path.
 ## Execution Flow
 
 ```
-python -m app.main [--dry-run] [--search]
+python -m app.main [--dry-run] [--search] [--graph-term|--graph-stats|--rebuild-graph]
         │
         ├── parse_arguments()
         ├── get_project_root()
         ├── load_settings()
+        │
+        ├── [--graph-term / --graph-stats / --rebuild-graph]  ← early return
+        │
         ├── get_current_datetime()   → lesson_date, weekday, theme
         ├── read_bloomberg_notes()   → bloomberg_notes
         │
@@ -341,64 +399,36 @@ python -m app.main [--dry-run] [--search]
                               save_lesson()
                                     ├── lesson.json
                                     └── lesson.md
+                                    │
+                                    ▼
+                              ProgressStore.record + save
+                                    │
+                                    ▼
+                              KnowledgeGraph.update_from_lesson()
+                              (same-lesson edges)
+                                    │
+                                    │  [live only]
+                                    ▼
+                              build_ai_connections()
+                              (semantic edges via Gemini)
+                                    │
+                                    ▼
+                              KnowledgeGraph.save()
 ```
 
 ---
 
 ## Future Architecture
 
-The sections below describe planned additions that will extend the system beyond
-its current single-pass CLI design.
+The sections below describe planned additions for future versions.
 
 ---
 
-### Dashboard
+### Robustness (v0.5)
 
-A browser-based UI for reading and navigating lessons. Likely a lightweight
-local web server (FastAPI or Flask) that serves the contents of `data/outputs/`
-as rendered HTML. No external hosting required for personal use.
-
-```
-data/outputs/
-      │
-      ▼
-FastAPI / Flask server
-      │
-      ▼
-Browser dashboard
-(lesson reader, calendar view, quiz replay)
-```
+Retry logic, structured logging, dated inbox files, and a config file layer.
 
 ---
-
-### Historical Lessons and Vocabulary Index
-
-A queryable index of every term ever taught, stored as a SQLite database or a
-structured JSON file. Enables the system to avoid repeating recent terms and to
-surface vocabulary the learner has seen before in a new context.
-
-```
-data/outputs/  ──▶  indexer  ──▶  vocabulary.db
-                                        │
-                                        ▼
-                              term history  |  seen dates  |  quiz results
-```
-
----
-
-### Progress Tracking and Difficulty Progression
-
-Each quiz result stored alongside the lesson. Terms answered incorrectly more
-than once are flagged for spaced-repetition review. The prompt builder reads the
-learner's weak-area list and biases term selection accordingly.
-
-```
-quiz_result  ──▶  progress.json
-                        │
-                        ▼
-                 build_agent_prompt()
-                 (weak terms injected into context)
-```
 
 ---
 
@@ -471,3 +501,8 @@ progress.json  ──▶  analytics engine  ──▶  weekly_report.md
 | Dual output (JSON + Markdown) | JSON enables future programmatic use; Markdown is immediately human-readable |
 | Date-stamped output folders | Preserves one lesson per day without overwriting history; maps cleanly to a future calendar UI |
 | Dry-run path shares save logic | Ensures the file-writing and rendering code is always tested, not just the API path |
+| `knowledge_graph.py` has zero Gemini imports | Keeps the data layer testable without mocking the API; all Gemini calls stay in `main.py` |
+| Two-layer connections (deterministic + AI) | Same-lesson edges are always produced and never fail; AI edges add richer semantics but are optional |
+| `build_ai_connections()` returns `[]` on error | A failed secondary Gemini call never aborts the lesson; the graph degrades gracefully |
+| Symmetric edge keys for `related_to` / `opposite_of` | Prevents duplicate A→B and B→A entries for commutative relationships |
+| `normalize_term()` + alias resolution | Keeps the graph clean across abbreviation variants without requiring the model to be consistent |

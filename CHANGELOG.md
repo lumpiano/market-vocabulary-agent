@@ -7,6 +7,90 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [0.4.0] - 2026-07-17
+
+### Added
+
+- **Knowledge graph module** (`app/knowledge_graph.py`) — pure data layer (no
+  Gemini imports) that maintains a graph of vocabulary terms (nodes) and their
+  semantic relationships (edges); persisted to `data/knowledge_graph/knowledge_graph.json`
+- **`TermNode` dataclass** — stores `term`, `normalized_term`, `definition`,
+  `category`, `first_seen`, `last_seen`, `lesson_count`, `mastery_score`, and
+  related-term list; deduplicates by normalized key on repeat lessons
+- **`RelationshipEdge` dataclass** — stores `source_term`, `target_term`,
+  `relationship_type`, `explanation`, `confidence_score`, `first_created`,
+  `last_updated`, `lesson_count`; boosts confidence +0.05 per repeat occurrence
+  (capped at 1.0)
+- **Two-layer connection system** — deterministic same-lesson edges
+  (`related_to` at 0.50 confidence) added for every pair of co-occurring terms;
+  AI-assisted semantic edges (9 typed relationships, minimum confidence 0.70)
+  added on live runs via a secondary Gemini call
+- **Nine relationship types** — `related_to`, `causes`, `affects`,
+  `measured_by`, `opposite_of`, `part_of`, `example_of`, `used_in`,
+  `influenced_by`
+- **`normalize_term()`** — lowercase, collapse whitespace, strip punctuation,
+  resolve known financial aliases (CPI → consumer price index, GDP, Fed, FOMC,
+  P/E, EPS, VIX, and 18 more)
+- **Symmetric edge deduplication** — `related_to` and `opposite_of` use a
+  sorted alphabetical key so (A→B) and (B→A) resolve to the same edge
+- **`--graph-term TERM`** CLI command — prints node details, top-10 connections
+  with confidence percentages and lesson counts, and a study recommendation
+- **`--graph-stats`** CLI command — prints totals (nodes, edges), most-connected
+  terms, isolated terms, strongest relationships, and category breakdown
+- **`--rebuild-graph`** CLI command — reconstructs the graph from scratch by
+  replaying all `data/outputs/*/lesson.json` files chronologically
+- **Knowledge Graph page** added to the Streamlit dashboard — three metrics
+  (terms, connections, categories), term explorer with definition, mastery, and
+  connection list, Graphviz DOT chart (focus term highlighted gold), and a
+  "study next" recommendation
+- **`build_ai_connections()`** in `main.py` — secondary Gemini call after lesson
+  generation; validates that both terms are from the lesson, relationship type is
+  recognised, confidence ≥ 0.70, and explanation is non-empty; returns `[]` on
+  any error so a failed AI-connections call never aborts the lesson
+- **`examples/sample_knowledge_graph.json`** — sanitised example with 8 nodes
+  from two lesson dates, 20 edges (17 same-lesson + 3 AI semantic), and mastery
+  scores ranging 0–100
+- **30-test pytest suite** (`tests/test_knowledge_graph.py`) — covers
+  `normalize_term` (7), `is_confident_enough` (2), edge key deduplication (2),
+  `ensure_node` (3), `ensure_edge` (4), `update_from_lesson` (3),
+  `connections_for_term` (2), `strongest_connections` (1),
+  `recommend_next_term` (2), `stats` (2), persistence roundtrip / missing /
+  corrupted (3); total test suite grows to 95 tests
+- **`data/knowledge_graph/`** added to `.gitignore` — graph data is personal
+  runtime state and is not committed to version control
+- **`GRAPH_DIR`** environment variable — configures where the knowledge graph
+  file is stored (default `data/knowledge_graph`)
+
+---
+
+## [0.3.0] - 2026-07-17
+
+### Added
+
+- **Notes module** (`app/notes.py`) — `load_notes`, `save_notes`, `parse_notes`,
+  and `validate_notes` for reading and writing `data/bloomberg_inbox/today.txt`;
+  `parse_notes` strips bullet prefixes (`-`, `*`) and blank lines;
+  `validate_notes` enforces a 10 000-character total limit and a 500-character
+  per-line limit
+- **Streamlit dashboard** (`app/dashboard.py`) — browser-based interface
+  launched with `streamlit run app/dashboard.py`; replaces the terminal workflow
+  for daily learners
+- **Market Notes page** — text area for entering Bloomberg observations, live
+  parse preview before saving, save/clear buttons, dry-run and live lesson
+  generation buttons, in-page lesson output preview
+- **Bloomberg external-source notice** — displayed on every Market Notes page
+  visit; clarifies that Bloomberg Live is an independent external resource,
+  unaffiliated with this application, and that all generated content is original
+  output from the Gemini API
+- **Progress page** — three headline metrics (terms seen, mastered ≥ 85%, due
+  for review today), weakest-terms list with `st.progress` mastery bars, and an
+  in-browser quiz recording form
+- **25-test pytest suite** (`tests/test_notes.py`) — covers `load_notes` (3),
+  `save_notes` (4), `parse_notes` (10), and `validate_notes` (8)
+- **`streamlit>=1.28`** added to `requirements.txt`
+
+---
+
 ## [0.2.0] - 2026-07-17
 
 ### Added

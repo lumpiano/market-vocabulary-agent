@@ -1,0 +1,364 @@
+{
+  "schema_version": "0.1",
+  "nodes": {
+    "basis point": {
+      "term": "Basis Point",
+      "normalized_term": "basis point",
+      "definition": "A basis point is one one-hundredth of one percentage point (0.01%).",
+      "category": "Interest rates, bonds, inflation, and the Federal Reserve",
+      "first_seen": "2026-07-15",
+      "last_seen": "2026-07-17",
+      "lesson_count": 2,
+      "mastery_score": 75,
+      "source_lesson_dates": ["2026-07-15", "2026-07-17"],
+      "related_terms": [
+        "consumer price index",
+        "federal funds rate",
+        "futures contract",
+        "spot price",
+        "treasury yield",
+        "yield curve"
+      ]
+    },
+    "treasury yield": {
+      "term": "Treasury Yield",
+      "normalized_term": "treasury yield",
+      "definition": "Treasury yield is the return an investor earns from holding a US government debt security.",
+      "category": "Interest rates, bonds, inflation, and the Federal Reserve",
+      "first_seen": "2026-07-15",
+      "last_seen": "2026-07-17",
+      "lesson_count": 2,
+      "mastery_score": 100,
+      "source_lesson_dates": ["2026-07-15", "2026-07-17"],
+      "related_terms": [
+        "basis point",
+        "consumer price index",
+        "federal funds rate",
+        "futures contract",
+        "spot price",
+        "yield curve"
+      ]
+    },
+    "yield curve": {
+      "term": "Yield Curve",
+      "normalized_term": "yield curve",
+      "definition": "The yield curve compares interest rates on government bonds with different maturity dates.",
+      "category": "Interest rates, bonds, inflation, and the Federal Reserve",
+      "first_seen": "2026-07-15",
+      "last_seen": "2026-07-17",
+      "lesson_count": 2,
+      "mastery_score": 67,
+      "source_lesson_dates": ["2026-07-15", "2026-07-17"],
+      "related_terms": [
+        "basis point",
+        "consumer price index",
+        "federal funds rate",
+        "futures contract",
+        "spot price",
+        "treasury yield"
+      ]
+    },
+    "consumer price index": {
+      "term": "Consumer Price Index",
+      "normalized_term": "consumer price index",
+      "definition": "The Consumer Price Index (CPI) measures average price changes for a basket of goods and services.",
+      "category": "Interest rates, bonds, inflation, and the Federal Reserve",
+      "first_seen": "2026-07-15",
+      "last_seen": "2026-07-15",
+      "lesson_count": 1,
+      "mastery_score": 50,
+      "source_lesson_dates": ["2026-07-15"],
+      "related_terms": [
+        "basis point",
+        "federal funds rate",
+        "treasury yield",
+        "yield curve"
+      ]
+    },
+    "federal funds rate": {
+      "term": "Federal Funds Rate",
+      "normalized_term": "federal funds rate",
+      "definition": "The federal funds rate is the overnight interest rate at which banks lend reserves to one another.",
+      "category": "Interest rates, bonds, inflation, and the Federal Reserve",
+      "first_seen": "2026-07-15",
+      "last_seen": "2026-07-15",
+      "lesson_count": 1,
+      "mastery_score": 25,
+      "source_lesson_dates": ["2026-07-15"],
+      "related_terms": [
+        "basis point",
+        "consumer price index",
+        "treasury yield",
+        "yield curve"
+      ]
+    },
+    "spot price": {
+      "term": "Spot Price",
+      "normalized_term": "spot price",
+      "definition": "The spot price is the current market price at which an asset can be bought or sold for immediate delivery.",
+      "category": "Interest rates, bonds, inflation, and the Federal Reserve",
+      "first_seen": "2026-07-17",
+      "last_seen": "2026-07-17",
+      "lesson_count": 1,
+      "mastery_score": 0,
+      "source_lesson_dates": ["2026-07-17"],
+      "related_terms": [
+        "basis point",
+        "futures contract",
+        "treasury yield",
+        "yield curve"
+      ]
+    },
+    "futures contract": {
+      "term": "Futures Contract",
+      "normalized_term": "futures contract",
+      "definition": "A futures contract is a legal agreement to buy or sell an asset at a predetermined price at a specified time in the future.",
+      "category": "Interest rates, bonds, inflation, and the Federal Reserve",
+      "first_seen": "2026-07-17",
+      "last_seen": "2026-07-17",
+      "lesson_count": 1,
+      "mastery_score": 0,
+      "source_lesson_dates": ["2026-07-17"],
+      "related_terms": [
+        "basis point",
+        "spot price",
+        "treasury yield",
+        "yield curve"
+      ]
+    },
+    "volatility index": {
+      "term": "Volatility Index",
+      "normalized_term": "volatility index",
+      "definition": "The VIX measures expected market volatility over the next 30 days based on S&P 500 options.",
+      "category": "Interest rates, bonds, inflation, and the Federal Reserve",
+      "first_seen": "2026-07-17",
+      "last_seen": "2026-07-17",
+      "lesson_count": 1,
+      "mastery_score": 0,
+      "source_lesson_dates": ["2026-07-17"],
+      "related_terms": []
+    }
+  },
+  "edges": {
+    "basis point|related_to|consumer price index": {
+      "source_term": "basis point",
+      "target_term": "consumer price index",
+      "relationship_type": "related_to",
+      "explanation": "Both 'Basis Point' and 'Consumer Price Index' appeared in the same Interest rates lesson on 2026-07-15.",
+      "confidence_score": 0.5,
+      "first_created": "2026-07-15",
+      "last_updated": "2026-07-15",
+      "lesson_count": 1,
+      "source_lesson_dates": ["2026-07-15"]
+    },
+    "basis point|related_to|federal funds rate": {
+      "source_term": "basis point",
+      "target_term": "federal funds rate",
+      "relationship_type": "related_to",
+      "explanation": "Both 'Basis Point' and 'Federal Funds Rate' appeared in the same Interest rates lesson on 2026-07-15.",
+      "confidence_score": 0.55,
+      "first_created": "2026-07-15",
+      "last_updated": "2026-07-17",
+      "lesson_count": 2,
+      "source_lesson_dates": ["2026-07-15", "2026-07-17"]
+    },
+    "basis point|related_to|treasury yield": {
+      "source_term": "basis point",
+      "target_term": "treasury yield",
+      "relationship_type": "related_to",
+      "explanation": "Both 'Basis Point' and 'Treasury Yield' appeared in the same Interest rates lesson on 2026-07-15.",
+      "confidence_score": 0.55,
+      "first_created": "2026-07-15",
+      "last_updated": "2026-07-17",
+      "lesson_count": 2,
+      "source_lesson_dates": ["2026-07-15", "2026-07-17"]
+    },
+    "basis point|related_to|yield curve": {
+      "source_term": "basis point",
+      "target_term": "yield curve",
+      "relationship_type": "related_to",
+      "explanation": "Both 'Basis Point' and 'Yield Curve' appeared in the same Interest rates lesson on 2026-07-15.",
+      "confidence_score": 0.55,
+      "first_created": "2026-07-15",
+      "last_updated": "2026-07-17",
+      "lesson_count": 2,
+      "source_lesson_dates": ["2026-07-15", "2026-07-17"]
+    },
+    "consumer price index|related_to|federal funds rate": {
+      "source_term": "consumer price index",
+      "target_term": "federal funds rate",
+      "relationship_type": "related_to",
+      "explanation": "Both 'Consumer Price Index' and 'Federal Funds Rate' appeared in the same Interest rates lesson on 2026-07-15.",
+      "confidence_score": 0.5,
+      "first_created": "2026-07-15",
+      "last_updated": "2026-07-15",
+      "lesson_count": 1,
+      "source_lesson_dates": ["2026-07-15"]
+    },
+    "consumer price index|related_to|treasury yield": {
+      "source_term": "consumer price index",
+      "target_term": "treasury yield",
+      "relationship_type": "related_to",
+      "explanation": "Both 'Consumer Price Index' and 'Treasury Yield' appeared in the same Interest rates lesson on 2026-07-15.",
+      "confidence_score": 0.55,
+      "first_created": "2026-07-15",
+      "last_updated": "2026-07-17",
+      "lesson_count": 2,
+      "source_lesson_dates": ["2026-07-15", "2026-07-17"]
+    },
+    "consumer price index|related_to|yield curve": {
+      "source_term": "consumer price index",
+      "target_term": "yield curve",
+      "relationship_type": "related_to",
+      "explanation": "Both 'Consumer Price Index' and 'Yield Curve' appeared in the same Interest rates lesson on 2026-07-15.",
+      "confidence_score": 0.55,
+      "first_created": "2026-07-15",
+      "last_updated": "2026-07-17",
+      "lesson_count": 2,
+      "source_lesson_dates": ["2026-07-15", "2026-07-17"]
+    },
+    "federal funds rate|related_to|treasury yield": {
+      "source_term": "federal funds rate",
+      "target_term": "treasury yield",
+      "relationship_type": "related_to",
+      "explanation": "Both 'Federal Funds Rate' and 'Treasury Yield' appeared in the same Interest rates lesson on 2026-07-15.",
+      "confidence_score": 0.5,
+      "first_created": "2026-07-15",
+      "last_updated": "2026-07-15",
+      "lesson_count": 1,
+      "source_lesson_dates": ["2026-07-15"]
+    },
+    "federal funds rate|related_to|yield curve": {
+      "source_term": "federal funds rate",
+      "target_term": "yield curve",
+      "relationship_type": "related_to",
+      "explanation": "Both 'Federal Funds Rate' and 'Yield Curve' appeared in the same Interest rates lesson on 2026-07-15.",
+      "confidence_score": 0.5,
+      "first_created": "2026-07-15",
+      "last_updated": "2026-07-15",
+      "lesson_count": 1,
+      "source_lesson_dates": ["2026-07-15"]
+    },
+    "treasury yield|related_to|yield curve": {
+      "source_term": "treasury yield",
+      "target_term": "yield curve",
+      "relationship_type": "related_to",
+      "explanation": "Both 'Treasury Yield' and 'Yield Curve' appeared in the same Interest rates lesson on 2026-07-15.",
+      "confidence_score": 0.55,
+      "first_created": "2026-07-15",
+      "last_updated": "2026-07-17",
+      "lesson_count": 2,
+      "source_lesson_dates": ["2026-07-15", "2026-07-17"]
+    },
+    "basis point|related_to|futures contract": {
+      "source_term": "basis point",
+      "target_term": "futures contract",
+      "relationship_type": "related_to",
+      "explanation": "Both 'Basis Point' and 'Futures Contract' appeared in the same Interest rates lesson on 2026-07-17.",
+      "confidence_score": 0.5,
+      "first_created": "2026-07-17",
+      "last_updated": "2026-07-17",
+      "lesson_count": 1,
+      "source_lesson_dates": ["2026-07-17"]
+    },
+    "basis point|related_to|spot price": {
+      "source_term": "basis point",
+      "target_term": "spot price",
+      "relationship_type": "related_to",
+      "explanation": "Both 'Basis Point' and 'Spot Price' appeared in the same Interest rates lesson on 2026-07-17.",
+      "confidence_score": 0.5,
+      "first_created": "2026-07-17",
+      "last_updated": "2026-07-17",
+      "lesson_count": 1,
+      "source_lesson_dates": ["2026-07-17"]
+    },
+    "futures contract|related_to|spot price": {
+      "source_term": "futures contract",
+      "target_term": "spot price",
+      "relationship_type": "related_to",
+      "explanation": "Both 'Futures Contract' and 'Spot Price' appeared in the same Interest rates lesson on 2026-07-17.",
+      "confidence_score": 0.5,
+      "first_created": "2026-07-17",
+      "last_updated": "2026-07-17",
+      "lesson_count": 1,
+      "source_lesson_dates": ["2026-07-17"]
+    },
+    "futures contract|related_to|treasury yield": {
+      "source_term": "futures contract",
+      "target_term": "treasury yield",
+      "relationship_type": "related_to",
+      "explanation": "Both 'Futures Contract' and 'Treasury Yield' appeared in the same Interest rates lesson on 2026-07-17.",
+      "confidence_score": 0.5,
+      "first_created": "2026-07-17",
+      "last_updated": "2026-07-17",
+      "lesson_count": 1,
+      "source_lesson_dates": ["2026-07-17"]
+    },
+    "futures contract|related_to|yield curve": {
+      "source_term": "futures contract",
+      "target_term": "yield curve",
+      "relationship_type": "related_to",
+      "explanation": "Both 'Futures Contract' and 'Yield Curve' appeared in the same Interest rates lesson on 2026-07-17.",
+      "confidence_score": 0.5,
+      "first_created": "2026-07-17",
+      "last_updated": "2026-07-17",
+      "lesson_count": 1,
+      "source_lesson_dates": ["2026-07-17"]
+    },
+    "spot price|related_to|treasury yield": {
+      "source_term": "spot price",
+      "target_term": "treasury yield",
+      "relationship_type": "related_to",
+      "explanation": "Both 'Spot Price' and 'Treasury Yield' appeared in the same Interest rates lesson on 2026-07-17.",
+      "confidence_score": 0.5,
+      "first_created": "2026-07-17",
+      "last_updated": "2026-07-17",
+      "lesson_count": 1,
+      "source_lesson_dates": ["2026-07-17"]
+    },
+    "spot price|related_to|yield curve": {
+      "source_term": "spot price",
+      "target_term": "yield curve",
+      "relationship_type": "related_to",
+      "explanation": "Both 'Spot Price' and 'Yield Curve' appeared in the same Interest rates lesson on 2026-07-17.",
+      "confidence_score": 0.5,
+      "first_created": "2026-07-17",
+      "last_updated": "2026-07-17",
+      "lesson_count": 1,
+      "source_lesson_dates": ["2026-07-17"]
+    },
+    "federal funds rate|affects|treasury yield": {
+      "source_term": "federal funds rate",
+      "target_term": "treasury yield",
+      "relationship_type": "affects",
+      "explanation": "Changes in the federal funds rate directly influence Treasury yields as investors reprice bonds to reflect new borrowing costs.",
+      "confidence_score": 0.92,
+      "first_created": "2026-07-15",
+      "last_updated": "2026-07-15",
+      "lesson_count": 1,
+      "source_lesson_dates": ["2026-07-15"]
+    },
+    "consumer price index|affects|federal funds rate": {
+      "source_term": "consumer price index",
+      "target_term": "federal funds rate",
+      "relationship_type": "affects",
+      "explanation": "Higher CPI readings signal elevated inflation, prompting the Federal Reserve to consider raising the federal funds rate to cool price growth.",
+      "confidence_score": 0.88,
+      "first_created": "2026-07-15",
+      "last_updated": "2026-07-15",
+      "lesson_count": 1,
+      "source_lesson_dates": ["2026-07-15"]
+    },
+    "spot price|opposite_of|futures contract": {
+      "source_term": "futures contract",
+      "target_term": "spot price",
+      "relationship_type": "opposite_of",
+      "explanation": "A futures contract represents a commitment to transact at a future date and price, in contrast to the spot price which reflects the immediate market price.",
+      "confidence_score": 0.75,
+      "first_created": "2026-07-17",
+      "last_updated": "2026-07-17",
+      "lesson_count": 1,
+      "source_lesson_dates": ["2026-07-17"]
+    }
+  }
+}

@@ -13,6 +13,7 @@ from google import genai
 from google.genai import types
 from pydantic import ValidationError
 
+from app.knowledge_graph import KnowledgeGraph, RELATIONSHIP_TYPES, normalize_term
 from app.models import MarketLesson
 from app.progress import ProgressStore
 
@@ -116,6 +117,24 @@ def parse_arguments() -> argparse.Namespace:
         help="Show the progress dashboard.",
     )
 
+    parser.add_argument(
+        "--graph-term",
+        metavar="TERM",
+        help="Show knowledge graph connections for a vocabulary term.",
+    )
+
+    parser.add_argument(
+        "--graph-stats",
+        action="store_true",
+        help="Show knowledge graph statistics.",
+    )
+
+    parser.add_argument(
+        "--rebuild-graph",
+        action="store_true",
+        help="Rebuild the knowledge graph from all saved lessons.",
+    )
+
     return parser.parse_args()
 
 
@@ -141,6 +160,7 @@ def load_settings(project_root: Path) -> dict[str, str]:
             "false",
         ).strip().lower(),
         "progress_dir": os.getenv("PROGRESS_DIR", "data/progress").strip(),
+        "graph_dir": os.getenv("GRAPH_DIR", "data/knowledge_graph").strip(),
     }
 
 
@@ -667,6 +687,258 @@ def get_progress_path(project_root: Path, configured_progress_dir: str) -> Path:
     return resolve_path(project_root, configured_progress_dir) / "progress.json"
 
 
+def get_graph_path(project_root: Path, configured_graph_dir: str) -> Path:
+    return resolve_path(project_root, configured_graph_dir) / "knowledge_graph.json"
+
+
+def cmd_graph_term(term: str, graph_path: Path) -> int:
+    """Show knowledge graph connections for a single vocabulary term."""
+    graph = KnowledgeGraph.load(graph_path)
+    nkey = normalize_term(term)
+
+    if nkey not in graph.nodes:
+        print(f"Term '{term}' not found in knowledge graph.", file=sys.stderr)
+        return 1
+
+    node = graph.nodes[nkey]
+    definition_display = (
+        node.definition[:100] + "..."
+        if len(node.definition) > 100
+        else node.definition
+    )
+
+    print(f"=== Knowledge Graph: {node.term} ===")
+    print(f"Category    : {node.category}")
+    print(f"Definition  : {definition_display}")
+    print(f"Mastery     : {node.mastery_score}%")
+    print(f"Lessons seen: {node.lesson_count}")
+    print(f"First seen  : {node.first_seen}")
+    print(f"Last seen   : {node.last_seen}")
+
+    connections = graph.strongest_connections(term, n=10)
+    if connections:
+        print()
+        print("Connections:")
+        for edge in connections:
+            other = (
+                edge.target_term
+                if edge.source_term == nkey
+                else edge.source_term
+            )
+            confidence_pct = round(edge.confidence_score * 100)
+            print(
+                f"  {other:<35} {edge.relationship_type:<15} "
+                f"{confidence_pct}% confidence"
+            )
+    else:
+        print()
+        print("No connections found for this term.")
+
+    recommendation = graph.recommend_next_term(term)
+    if recommendation:
+        rec_node = graph.nodes.get(recommendation)
+        rec_display = rec_node.term if rec_node else recommendation
+        print()
+        print(f"Study next  : {rec_display} (lowest mastery among connections)")
+
+    return 0
+
+
+def cmd_graph_stats(graph_path: Path) -> int:
+    """Print summary statistics about the knowledge graph."""
+    graph = KnowledgeGraph.load(graph_path)
+    s = graph.stats()
+
+    print("=== Knowledge Graph Statistics ===")
+    print(f"Total terms      : {s['total_nodes']}")
+    print(f"Total connections: {s['total_edges']}")
+
+    if s["most_connected_terms"]:
+        print()
+        print("Most connected terms:")
+        for term_key, degree in s["most_connected_terms"]:
+            node = graph.nodes.get(term_key)
+            display = node.term if node else term_key
+            print(f"  {display:<35} {degree} connections")
+
+    if s["isolated_terms"]:
+        print()
+        print("Isolated terms (no connections):")
+        for term_key in s["isolated_terms"]:
+            node = graph.nodes.get(term_key)
+            display = node.term if node else term_key
+            print(f"  {display}")
+
+    if s["strongest_relationships"]:
+        print()
+        print("Strongest relationships:")
+        for edge in s["strongest_relationships"]:
+            confidence_pct = round(edge.confidence_score * 100)
+            print(
+                f"  {edge.source_term} --[{edge.relationship_type}]--> "
+                f"{edge.target_term}  ({confidence_pct}%)"
+            )
+
+    if s["categories"]:
+        print()
+        print("Categories:")
+        for category, count in sorted(s["categories"].items()):
+            print(f"  {category:<30} {count} term(s)")
+
+    return 0
+
+
+def cmd_rebuild_graph(
+    graph_path: Path,
+    project_root: Path,
+    settings: dict,
+) -> int:
+    """Rebuild the knowledge graph from all saved lesson.json files."""
+    graph = KnowledgeGraph()
+    output_root = resolve_path(project_root, settings["output_dir"])
+
+    lesson_files = sorted(output_root.glob("*/lesson.json"))
+
+    if not lesson_files:
+        print("No saved lessons found. Run a lesson first.")
+        return 0
+
+    loaded = 0
+    failed = 0
+
+    for lesson_file in lesson_files:
+        try:
+            raw = json.loads(lesson_file.read_text(encoding="utf-8"))
+            lesson = MarketLesson.model_validate(raw)
+            # lesson_date comes from the directory name (YYYY-MM-DD)
+            lesson_date = lesson_file.parent.name
+            graph.update_from_lesson(lesson, lesson_date)
+            loaded += 1
+        except Exception:
+            failed += 1
+
+    graph.save(graph_path)
+
+    print(f"Rebuilt knowledge graph from {loaded} lesson(s).")
+    if failed:
+        print(f"Skipped {failed} lesson(s) due to errors.")
+    print(f"Nodes: {len(graph.nodes)}  Edges: {len(graph.edges)}")
+    print(f"Saved: {graph_path}")
+
+    return 0
+
+
+def build_ai_connections(
+    lesson: "MarketLesson",
+    settings: dict,
+    lesson_date: str,
+) -> list[dict]:
+    """Ask Gemini to identify semantic relationships between lesson terms.
+
+    Returns an empty list if no API key is configured or on any error.
+    """
+    if not settings.get("api_key"):
+        return []
+
+    try:
+        from google import genai  # local import to avoid hard dependency
+        from google.genai import types as gtypes
+
+        term_names = [vt.term for vt in lesson.terms]
+        terms_str = "\n".join(f"- {t}" for t in term_names)
+        rel_types_str = ", ".join(sorted(RELATIONSHIP_TYPES))
+
+        prompt = f"""
+You are a financial education assistant.
+
+Given these five market vocabulary terms from a lesson:
+{terms_str}
+
+Identify meaningful semantic relationships between pairs of these terms.
+
+For each relationship return a JSON object with these exact keys:
+  "source": <term name exactly as listed above>,
+  "target": <term name exactly as listed above>,
+  "relationship_type": <one of: {rel_types_str}>,
+  "explanation": <one sentence explaining the relationship>,
+  "confidence_score": <float between 0.0 and 1.0>
+
+Return a JSON array of relationship objects. Only include pairs where you are
+at least 70% confident (confidence_score >= 0.70). Return at most 10 objects.
+Do not include the same pair twice. Source and target must be different terms.
+Return only the JSON array with no surrounding text or markdown.
+""".strip()
+
+        client = genai.Client(api_key=settings["api_key"])
+        response = client.models.generate_content(
+            model=settings["model"],
+            contents=prompt,
+            config=gtypes.GenerateContentConfig(
+                temperature=0.1,
+                response_mime_type="application/json",
+            ),
+        )
+
+        text = response.text or ""
+        raw_list = json.loads(text)
+
+        if not isinstance(raw_list, list):
+            return []
+
+        valid_term_names_normalized = {
+            normalize_term(vt.term): vt.term for vt in lesson.terms
+        }
+
+        results: list[dict] = []
+        for item in raw_list:
+            if not isinstance(item, dict):
+                continue
+            src = item.get("source", "")
+            tgt = item.get("target", "")
+            rel = item.get("relationship_type", "")
+            explanation = item.get("explanation", "")
+            confidence = item.get("confidence_score", 0.0)
+
+            # Validate: both terms must be from the lesson
+            src_norm = normalize_term(src)
+            tgt_norm = normalize_term(tgt)
+            if src_norm not in valid_term_names_normalized:
+                continue
+            if tgt_norm not in valid_term_names_normalized:
+                continue
+            if src_norm == tgt_norm:
+                continue
+
+            # Validate relationship type
+            if rel not in RELATIONSHIP_TYPES:
+                continue
+
+            # Validate confidence
+            try:
+                confidence = float(confidence)
+            except (TypeError, ValueError):
+                continue
+            if confidence < 0.70:
+                continue
+
+            # Validate explanation
+            if not explanation or not str(explanation).strip():
+                continue
+
+            results.append({
+                "source": src_norm,
+                "target": tgt_norm,
+                "relationship_type": rel,
+                "explanation": str(explanation).strip(),
+                "confidence_score": confidence,
+            })
+
+        return results
+
+    except Exception:
+        return []
+
+
 def cmd_record_quiz(
     term: str,
     correct: bool,
@@ -726,6 +998,20 @@ def main() -> int:
     settings = load_settings(project_root)
 
     progress_path = get_progress_path(project_root, settings["progress_dir"])
+    graph_path = get_graph_path(project_root, settings["graph_dir"])
+
+    if args.graph_term:
+        return cmd_graph_term(term=args.graph_term, graph_path=graph_path)
+
+    if args.graph_stats:
+        return cmd_graph_stats(graph_path=graph_path)
+
+    if args.rebuild_graph:
+        return cmd_rebuild_graph(
+            graph_path=graph_path,
+            project_root=project_root,
+            settings=settings,
+        )
 
     if args.progress:
         today = get_current_datetime(settings["timezone"]).date().isoformat()
@@ -800,6 +1086,22 @@ def main() -> int:
         for vocabulary_term in lesson.terms:
             store.ensure_term(vocabulary_term.term, lesson_date)
         store.save(progress_path)
+
+        # --- knowledge graph update ----------------------------------------
+        graph = KnowledgeGraph.load(graph_path)
+        graph.update_from_lesson(lesson, lesson_date)
+        graph.sync_mastery(store)
+        if not args.dry_run:
+            for edge_data in build_ai_connections(lesson, settings, lesson_date):
+                graph.ensure_edge(
+                    source=edge_data["source"],
+                    target=edge_data["target"],
+                    relationship_type=edge_data["relationship_type"],
+                    explanation=edge_data["explanation"],
+                    confidence_score=edge_data["confidence_score"],
+                    lesson_date=lesson_date,
+                )
+        graph.save(graph_path)
 
         print("Vocabulary lesson created successfully.")
         print(f"Open: {markdown_path}")
