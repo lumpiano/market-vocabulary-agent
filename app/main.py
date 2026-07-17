@@ -319,6 +319,11 @@ def create_dry_run_lesson(
         "quiz": {
             "question": (
                 "Which term means one one-hundredth of one percentage point?"
+                if weekday == "Tuesday"
+                else (
+                    f"Which of the following is a key vocabulary term "
+                    f"for {weekday}'s market theme?"
+                )
             ),
             "choices": [
                 FALLBACK_TERMS[weekday][0],
