@@ -39,4 +39,6 @@ python -m app.main --dry-run
 
 ## License
 
-MIT
+Copyright © 2026 Guadalupe Contreras. All Rights Reserved.
+This repository is shared for evaluation and portfolio purposes only.
+No copying, modification, distribution, or commercial use without prior written permission.
