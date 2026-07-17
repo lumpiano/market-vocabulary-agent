@@ -12,8 +12,10 @@ for contributors joining the project.
 market_vocabulary_agent/
 ├── app/
 │   ├── __init__.py
+│   ├── dashboard.py
 │   ├── main.py
 │   ├── models.py
+│   ├── notes.py
 │   └── progress.py
 ├── data/
 │   ├── bloomberg_inbox/
@@ -30,6 +32,7 @@ market_vocabulary_agent/
 │   └── sample_progress.json
 ├── tests/
 │   ├── __init__.py
+│   ├── test_notes.py
 │   └── test_progress.py
 ├── .env                       ← git-ignored; holds secrets
 ├── .gitignore
@@ -51,8 +54,10 @@ runs lives here.
 | File | Purpose |
 |---|---|
 | `__init__.py` | Marks `app` as a Python package. Empty; required for `python -m app.main` to resolve correctly. |
+| `dashboard.py` | Streamlit dashboard. Two pages: **Market Notes** (enter and save Bloomberg observations, preview parsed notes, launch dry-run or live lesson generation) and **Progress** (mastery metrics, weakest terms, quiz recording). |
 | `main.py` | Entry point and orchestration layer. Parses CLI arguments, loads settings from `.env`, reads the Bloomberg inbox, calls either the dry-run path or the Gemini API, validates the result, writes the output files, and delegates to `progress.py` for quiz and progress commands. |
 | `models.py` | Pydantic schema definitions. Declares `VocabularyTerm`, `QuizQuestion`, and `MarketLesson`. All generated content is validated against these models before anything is written to disk. |
+| `notes.py` | Manual notes module. Provides `load_notes`, `save_notes`, `parse_notes`, and `validate_notes` for reading and writing `data/bloomberg_inbox/today.txt` and parsing bullet-prefixed note lines. |
 | `progress.py` | Progress tracking module. Defines `TermRecord` and `ProgressStore` dataclasses, the mastery formula (`compute_mastery`), and the spaced-repetition scheduler (`compute_next_review`). Persists data to `data/progress/progress.json`. |
 
 ---
@@ -120,6 +125,7 @@ Automated test suite. Run with `python -m pytest tests/ -v`.
 | File | Purpose |
 |---|---|
 | `__init__.py` | Marks `tests` as a Python package. Empty. |
+| `test_notes.py` | 25 pytest tests covering `load_notes` (missing/existing/empty files), `save_notes` (creates, overwrites, creates parent dirs), `parse_notes` (bullet prefixes, blank lines, order), and `validate_notes` (empty, whitespace, length limits, per-line limits). |
 | `test_progress.py` | 40 pytest tests covering `compute_mastery`, `compute_next_review`, `TermRecord` state transitions, and `ProgressStore` operations (term management, load/save, missing and corrupted files). |
 
 ---

@@ -64,6 +64,14 @@ language on Bloomberg and understanding why markets move.
   research during generation for fact-checked, source-cited lessons
 - **Weekday themes** — each day of the week has a fixed topic so the vocabulary
   builds systematically across the week
+- **Streamlit dashboard** (`app/dashboard.py`) — browser-based interface with two
+  pages: Market Notes and Progress; launch with `streamlit run app/dashboard.py`
+- **Manual Market Notes page** — enter and save Bloomberg observations to
+  `today.txt`, preview parsed notes, and launch dry-run or live lesson generation
+  without opening a terminal
+- **Bloomberg sourcing notice** — the dashboard displays a clear notice that
+  Bloomberg Live is an independent external source, unaffiliated with this
+  application; all generated content is original
 - **Progress tracking** — records quiz results per term in a local JSON file;
   tracks review count, correct/incorrect counts, mastery score, and next review
   date
@@ -85,8 +93,10 @@ language on Bloomberg and understanding why markets move.
 market_vocabulary_agent/
 ├── app/
 │   ├── __init__.py          # Package marker; required for python -m app.main
+│   ├── dashboard.py         # Streamlit dashboard: Market Notes + Progress pages
 │   ├── main.py              # Entry point — CLI, orchestration, all pipeline logic
 │   ├── models.py            # Pydantic schema: MarketLesson, VocabularyTerm, QuizQuestion
+│   ├── notes.py             # Notes module: load, save, parse, validate today.txt
 │   └── progress.py          # Progress tracking: TermRecord, ProgressStore, mastery formula
 ├── data/
 │   ├── bloomberg_inbox/
@@ -103,7 +113,8 @@ market_vocabulary_agent/
 │   └── sample_progress.json # Sanitised example progress file
 ├── tests/
 │   ├── __init__.py
-│   └── test_progress.py     # 45 pytest tests for progress.py
+│   ├── test_notes.py        # 25 pytest tests for notes.py
+│   └── test_progress.py     # 40 pytest tests for progress.py
 ├── .env                     # Git-ignored; holds your API key and settings
 ├── .gitignore
 ├── ARCHITECTURE.md          # Internal system documentation and pipeline diagrams
@@ -152,6 +163,7 @@ Dependencies (`requirements.txt`):
 | `google-genai` | `>=2.0.0` | Gemini API client |
 | `pydantic` | `>=2.8` | Schema definition and validation |
 | `python-dotenv` | `>=1.0` | `.env` file loading |
+| `streamlit` | `>=1.28` | Browser dashboard |
 
 ---
 
@@ -265,6 +277,34 @@ is instructed to use only stable educational examples and to note that no
 live web research was performed.
 
 The `--search` flag is silently ignored in `--dry-run` mode.
+
+---
+
+### Dashboard — Browser Interface
+
+Launches the Streamlit dashboard. No Gemini API key is required to use the
+Market Notes page with dry-run generation.
+
+```bash
+streamlit run app/dashboard.py
+```
+
+The dashboard opens in your browser at `http://localhost:8501` and has two pages:
+
+**Market Notes**
+
+- Enter the terms and observations you heard while watching Bloomberg Live
+- Parsed notes are previewed live before you save
+- Save notes to `data/bloomberg_inbox/today.txt`
+- Launch a dry-run or live lesson generation and read the output in-page
+- A sourcing notice is displayed explaining Bloomberg's role as an external
+  independent broadcast resource unaffiliated with this application
+
+**Progress**
+
+- View total terms seen, mastered terms (≥ 85%), and terms due for review today
+- Weakest terms are listed with mastery bars
+- Record a quiz result for any term directly from the browser
 
 ---
 
@@ -459,7 +499,7 @@ was consulted.
 
 ## Current Status
 
-**Version 0.2** — progress tracking release.
+**Version 0.3** — dashboard release.
 
 | Component | Status |
 |---|---|
@@ -474,29 +514,24 @@ was consulted.
 | Google Search grounding (optional) | Complete |
 | Progress tracking (`app/progress.py`) | Complete |
 | Mastery formula and spaced-repetition scheduling | Complete |
-| `--record-quiz` / `--result` CLI commands | Complete |
-| `--progress` dashboard command | Complete |
-| 40-test pytest suite | Complete |
+| `--record-quiz` / `--result` / `--progress` CLI commands | Complete |
+| Streamlit dashboard (`app/dashboard.py`) | Complete |
+| Manual Market Notes page with Bloomberg disclaimer | Complete |
+| Progress page with metrics, weakest terms, and quiz recording | Complete |
+| Notes module (`app/notes.py`) with validation | Complete |
+| 65-test pytest suite (25 notes + 40 progress) | Complete |
 
 ---
 
 ## Roadmap
 
-### Version 0.3 — Robustness and Flexibility
+### Version 0.4 — Robustness and Flexibility
 
 - Dated inbox files (`YYYY-MM-DD.txt`) alongside `today.txt`
 - Prompt templates extracted to a `prompts/` directory
 - Exponential-backoff retry logic for transient API failures
 - Structured config file (`config.toml`) for advanced settings
 - Python `logging` module replacing bare `print()` calls
-
-### Version 0.4 — Dashboard
-
-- Local Streamlit dashboard for reading and navigating lessons
-- Historical lesson browser by date and theme
-- Full-text vocabulary search across all past lessons
-- Progress visualisation powered by `data/progress/`
-- Daily learning streak display
 
 ### Version 1.0 — Automation and Intelligence
 
