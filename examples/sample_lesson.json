@@ -1,0 +1,76 @@
+{
+  "lesson_date": "2026-07-15",
+  "weekday": "Wednesday",
+  "theme": "Commodities",
+  "bloomberg_notes_used": [
+    "Noticed a reference to lower-than-expected oil inventory data.",
+    "Heard the term contango mentioned but did not understand it.",
+    "Saw crude oil prices rising after a supply announcement."
+  ],
+  "terms": [
+    {
+      "term": "Spot Price",
+      "plain_english_definition": "The spot price is the current market price at which a commodity can be bought or sold for immediate delivery.",
+      "everyday_analogy": "It is like the price tag on a product at a store — what you pay right now to take it home today.",
+      "market_example": "If crude oil's spot price is $85 per barrel, a refinery buying oil today pays that price for barrels delivered immediately.",
+      "why_it_matters": "The spot price reflects real-time supply and demand conditions and is the benchmark from which futures prices are compared."
+    },
+    {
+      "term": "Futures Contract",
+      "plain_english_definition": "A futures contract is a legal agreement to buy or sell a specific commodity at a predetermined price on a set date in the future.",
+      "everyday_analogy": "It is like agreeing today to buy next month's grocery order at this week's prices, locking in the cost before prices change.",
+      "market_example": "An airline might buy crude oil futures contracts to lock in fuel costs for the next six months, protecting itself against price spikes.",
+      "why_it_matters": "Futures contracts allow producers and consumers to hedge against price volatility and give traders a way to speculate on price direction."
+    },
+    {
+      "term": "Contango",
+      "plain_english_definition": "Contango is a market condition in which the futures price of a commodity is higher than its current spot price.",
+      "everyday_analogy": "Imagine paying a premium to reserve a hotel room six months in advance because the hotel expects to be fully booked and prices to rise.",
+      "market_example": "When crude oil futures for delivery in three months trade at $88 while the spot price is $85, the market is in contango.",
+      "why_it_matters": "Contango signals that markets expect future prices to be higher, often reflecting storage costs or anticipated supply tightening."
+    },
+    {
+      "term": "Backwardation",
+      "plain_english_definition": "Backwardation is a market condition in which the futures price of a commodity is lower than its current spot price.",
+      "everyday_analogy": "It is like a store offering a discount for customers who pre-order next season's inventory, because demand is high right now but expected to cool.",
+      "market_example": "If the spot price of natural gas is $3.50 per MMBtu but a three-month futures contract trades at $3.20, the market is in backwardation.",
+      "why_it_matters": "Backwardation often signals strong immediate demand or tight near-term supply, and traders pay close attention to shifts between contango and backwardation."
+    },
+    {
+      "term": "Inventory Report",
+      "plain_english_definition": "An inventory report is a periodic government or industry release that shows how much of a commodity — such as crude oil or natural gas — is currently held in storage.",
+      "everyday_analogy": "Think of it as a weekly count of how many items are sitting in a warehouse. If stocks are lower than expected, prices often rise; if higher, prices may fall.",
+      "market_example": "The U.S. Energy Information Administration releases a weekly crude oil inventory report. A surprise drawdown often pushes oil prices higher within minutes.",
+      "why_it_matters": "Inventory levels are one of the most watched supply indicators in commodity markets. Unexpected results can cause sharp price moves in oil, gas, and related assets."
+    }
+  ],
+  "cause_and_effect_chain": [
+    "Major oil-producing nations announce unexpected production cuts.",
+    "Traders anticipate tighter future supply and increase purchases of futures contracts.",
+    "Futures prices rise above the current spot price, placing the market in contango.",
+    "Refiners and storage operators buy physical oil today and sell futures contracts simultaneously to lock in the price gap — a strategy called a cash-and-carry trade.",
+    "Increased storage demand draws down available inventory, further supporting higher spot prices."
+  ],
+  "quiz": {
+    "question": "What term describes a commodity market condition in which futures prices are higher than the current spot price?",
+    "choices": [
+      "Contango",
+      "Backwardation",
+      "Spot Price",
+      "Futures Contract"
+    ],
+    "answer": "Contango",
+    "explanation": "Contango occurs when futures prices exceed the spot price, typically reflecting storage costs and expectations of higher future prices."
+  },
+  "five_minute_study_plan": [
+    "Minute 1: Read all five term names and identify any you already recognise.",
+    "Minute 2: Read each plain-English definition and pause after each one.",
+    "Minute 3: Review the everyday analogies and think of your own example for contango or backwardation.",
+    "Minute 4: Follow the cause-and-effect chain from the production cut announcement to the inventory drawdown.",
+    "Minute 5: Answer the quiz question without referring back to the definitions."
+  ],
+  "sources": [
+    "No current web research used."
+  ],
+  "disclaimer": "Educational information only. Not personalized financial, investment, legal, or tax advice."
+}

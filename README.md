@@ -260,6 +260,9 @@ Running the agent again on the same date overwrites both files for that date.
 The `data/outputs/` directory is git-ignored and is never committed to version
 control.
 
+A representative example of the output format is available at
+`examples/sample_lesson.md` and `examples/sample_lesson.json`.
+
 ---
 
 ## Daily Themes
